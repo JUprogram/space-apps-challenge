@@ -214,7 +214,22 @@ def build_anomalies():
             "metricRefs": []
         })
 
-    return anomalies
+    # Highest-priority alerts appear first.
+    severity_order = {
+    	"critical": 0,
+    	"high": 1,
+    	"medium": 2,
+    	"low": 3,
+    	"info": 4,
+    }
+
+   anomalies.sort(
+    	key=lambda alert: severity_order.get(
+        alert.get("severity", "info"), 99
+    )
+)
+
+   return anomalies
 
 
 # --------------------------------------------------
