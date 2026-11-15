@@ -1,5 +1,3 @@
-#: the objective  of this file was to comprehend the dataset
-
 import pandas as pd
 
 data = pd.read_csv("BRSMACT_Campagin_1_Actigraphy")

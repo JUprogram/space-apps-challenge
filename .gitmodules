@@ -1,0 +1,3 @@
+[submodule "space-apps-challenge"]
+	path = space-apps-challenge
+	url = https://github.com/JUprogram/space-apps-challenge.git
