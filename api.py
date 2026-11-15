@@ -220,25 +220,24 @@ def build_anomalies():
 # --------------------------------------------------
 # Build simulated radiation information
 # --------------------------------------------------
-
 def build_radiation_analysis():
     return {
         "status": "critical",
         "riskLabel": "SIMULATED SCENARIO",
-        "headline": (
-            "SIMULATED radiation safety scenario — "
-            "follow designated shelter procedure"
-        ),
-        "subhead": (
-            "Demonstration only. No live radiation telemetry "
-            "is connected."
-        ),
+        "headline": "Radiation safety demonstration",
+        "subhead": "Illustrative values — not live telemetry.",
         "criticalNote": (
-            "SIMULATION ONLY — no live radiation measurement "
-            "or dose assessment is available."
-        )
+            "This scenario uses fictional demonstration values. "
+            "It does not represent an actual radiation exposure event."
+        ),
+        "demoData": {
+            "reading": 1.75,
+            "readingUnit": "mSv/h",
+            "reference": 1.30,
+            "referenceUnit": "mSv/h",
+            "comparisonLabel": "Illustrative comparison only"
+        }
     }
-
 
 # --------------------------------------------------
 # Full dashboard snapshot
