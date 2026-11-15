@@ -243,6 +243,41 @@ def build_radiation_analysis():
 # Full dashboard snapshot
 # --------------------------------------------------
 
+def build_body_regions():
+    """
+    Only assign a body-region status when supported
+    by an actual measurement and its interpretation.
+
+    Current research datasets do not provide the
+    dashboard's sample HR, HRV, or SpO2 readings.
+    """
+    return [
+        {
+            "id": "cardio",
+            "status": "unknown",
+            "reason": (
+                "No current heart-rate or HRV telemetry "
+                "is connected. Historical echocardiography "
+                "observations are available separately."
+            )
+        },
+        {
+            "id": "respiratory",
+            "status": "unknown",
+            "reason": "No current SpO2 measurements are available."
+        },
+        {
+            "id": "musculoskeletal",
+            "status": "unknown",
+            "reason:": "No current musculoskeletal measurements are available."
+        },
+        {
+            "id": "neuro",
+            "status": "unknown",
+            "reason": "No current neurocognitive measurements are available."
+        }
+    ]
+
 def build_snapshot():
     now = current_time()
 
@@ -275,7 +310,7 @@ def build_snapshot():
 
         "analysis": {
             "status": "ok",
-
+	    "bodyRegions": build_body_regions(),
             "engine": {
                 "name": "Isolation Forest",
                 "version": "1.0"
