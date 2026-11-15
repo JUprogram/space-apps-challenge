@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 from pathlib import Path
 import asyncio
@@ -8,7 +7,18 @@ import math
 import numpy as np
 import pandas as pd
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pharmacy_service import (
+    process_inventory,
+    get_inventory_summary,
+    get_label_status,
+)
+from pharmacy_service import (
+    process_inventory,
+    get_inventory_summary,
+    get_label_status,
+    get_item_by_id,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -107,7 +117,67 @@ def format_measurements(measurements):
 # --------------------------------------------------
 # Convert model flags into dashboard anomalies
 # --------------------------------------------------
-    # Add the simulated radiation scenario to the ranked alert list
+
+def build_anomalies():
+    flagged = interpreted_alerts[
+    	interpreted_alerts["Status"] == "MONITOR"
+    ].copy()
+
+    anomalies = []
+
+    for index, (_, row) in enumerate(flagged.iterrows(), start=1):
+        record = row.to_dict()
+
+        category = record.get("Category", "Research")
+        subject = record.get("Subject", "Unknown")
+        phase = record.get("Test_Phase", "Not specified")
+
+        measurements = record.get("Measurements", {})
+        measurement_text = format_measurements(measurements)
+
+        explanation = record.get(
+            "Explanation",
+            "An unusual pattern was flagged by the exploratory model."
+        )
+
+        reference = record.get(
+            "Reference_Context",
+            "No validated clinical baseline is available."
+        )
+
+        next_step = record.get(
+            "Next_Step",
+            "Review this historical observation in its research context."
+        )
+
+        anomalies.append({
+            "id": f"research-flag-{index}",
+            "severity": "info",
+            "title": f"{category} observation flagged for review",
+            "summary": (
+                f"Historical research observation for subject "
+                f"{subject}, phase {phase}."
+            ),
+            "detectedAt": get_date(record),
+            "explanation": {
+                "summary": explanation,
+                "detail": (
+                    f"Recorded measurements: {measurement_text}. "
+                    f"Reference context: {reference}. "
+                    "The Isolation Forest identified this observation "
+                    "as unusual relative to patterns in the analyzed "
+                    "dataset. Individual feature contributions were "
+                    "not calculated. This is not a diagnosis or a "
+                    "validated clinical threshold."
+                ),
+                "contributing": [],
+                "recommendedAction": next_step
+            },
+            "confidence": None,
+            "metricRefs": []
+        })
+
+    # Add the simulated radiation scenario.
     radiation_record = radiation_alerts.iloc[0].to_dict()
 
     anomalies.append({
@@ -138,6 +208,20 @@ def format_measurements(measurements):
         "confidence": None,
         "metricRefs": []
     })
+
+    severity_order = {
+        "critical": 0,
+        "high": 1,
+        "medium": 2,
+        "low": 3,
+        "info": 4
+    }
+
+    anomalies.sort(
+        key=lambda alert: severity_order.get(
+            alert.get("severity", "info"), 99
+        )
+    )
 
     return anomalies
 
@@ -380,6 +464,147 @@ def health():
         "disclaimer": (
             "Wellness support only — not a medical device / "
             "does not diagnose."
+        )
+    }
+
+
+
+
+# --------------------------------------------------
+# Pharmacy endpoints
+# --------------------------------------------------
+
+@app.get("/pharmacy/inventory")
+def pharmacy_inventory():
+    items = process_inventory()
+
+    return {
+        "module": "AWACS Pharmacy",
+        "data_mode": "DEMONSTRATION",
+        "total_items": len(items),
+        "items": items,
+        "disclaimer": (
+            "Demonstration inventory only. "
+            "Medication information is not verified for spaceflight."
+        )
+    }
+
+
+@app.get("/pharmacy/inventory/{item_id}")
+def pharmacy_inventory_item(item_id: str):
+    item = get_item_by_id(item_id)
+
+    if item is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Inventory item not found."
+        )
+
+    processed = process_inventory()
+
+    for record in processed:
+        if record["item_id"] == item_id:
+            return record
+
+    raise HTTPException(
+        status_code=404,
+        detail="Inventory item not found."
+    )
+
+
+@app.get("/pharmacy/summary")
+def pharmacy_summary():
+    return {
+        "data_mode": "DEMONSTRATION",
+        "summary": get_inventory_summary()
+    }
+
+
+@app.get("/pharmacy/inventory/{item_id}/label")
+def pharmacy_item_label(item_id: str):
+    label_status = get_label_status(item_id)
+
+    if label_status is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Inventory item not found."
+        )
+
+    return {
+        "label_information": label_status,
+        "data_mode": "DEMONSTRATION",
+        "disclaimer": (
+            "Label information requires an identifiable "
+            "authoritative source. Missing information is not verified."
+        )
+    }
+
+
+
+# --------------------------------------------------
+# Pharmacy endpoints
+# --------------------------------------------------
+
+@app.get("/pharmacy/inventory")
+def pharmacy_inventory():
+    items = process_inventory()
+
+    return {
+        "module": "AWACS Pharmacy",
+        "data_mode": "DEMONSTRATION",
+        "total_items": len(items),
+        "items": items,
+        "disclaimer": (
+            "Demonstration inventory only. "
+            "Medication information is not verified for spaceflight."
+        )
+    }
+
+
+@app.get("/pharmacy/inventory/{item_id}")
+def pharmacy_inventory_item(item_id: str):
+    items = process_inventory()
+
+    for item in items:
+        if item.get("item_id") == item_id:
+            return item
+
+    raise HTTPException(
+        status_code=404,
+        detail="Inventory item not found."
+    )
+
+
+@app.get("/pharmacy/summary")
+def pharmacy_summary():
+    return {
+        "data_mode": "DEMONSTRATION",
+        "summary": get_inventory_summary()
+    }
+
+
+@app.get("/pharmacy/inventory/{item_id}/label")
+def pharmacy_item_label(item_id: str):
+    items = process_inventory()
+
+    item_exists = any(
+        item.get("item_id") == item_id
+        for item in items
+    )
+
+    if not item_exists:
+        raise HTTPException(
+            status_code=404,
+            detail="Inventory item not found."
+        )
+
+    return {
+        "item_id": item_id,
+        "label_information": get_label_status(item_id),
+        "data_mode": "DEMONSTRATION",
+        "disclaimer": (
+            "Label information must have an identifiable "
+            "authoritative source. Missing information is not verified."
         )
     }
 

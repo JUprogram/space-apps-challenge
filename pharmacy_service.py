@@ -227,6 +227,7 @@ def get_inventory_summary():
 # 7. Medication label status
 # --------------------------------------------------
 
+
 def get_label_status(item_id):
     """Return label availability and verification information."""
 
@@ -235,18 +236,33 @@ def get_label_status(item_id):
     if item is None:
         return None
 
-    label = item.get("label", {})
+    label = item.get("label") or {}
+
+    required_fields = [
+        "indications",
+        "contraindications",
+        "warnings",
+        "storage",
+    ]
+
+    content_present = any(
+        label.get(field) is not None
+        for field in required_fields
+    )
+
+    available = (
+        label.get("label_status") == "VERIFIED"
+        and bool(label.get("label_source"))
+        and label.get("revision_date") is not None
+        and content_present
+    )
 
     return {
         "item_id": item_id,
         "label_status": label.get("label_status"),
         "label_source": label.get("label_source"),
         "revision_date": label.get("revision_date"),
-        "available": (
-            label.get("label_status") == "VERIFIED"
-            and bool(label.get("label_source"))
-            and label.get("revision_date") is not None
-        ),
+        "available": available,
     }
 
 
