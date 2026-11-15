@@ -107,6 +107,39 @@ def format_measurements(measurements):
 # --------------------------------------------------
 # Convert model flags into dashboard anomalies
 # --------------------------------------------------
+    # Add the simulated radiation scenario to the ranked alert list
+    radiation_record = radiation_alerts.iloc[0].to_dict()
+
+    anomalies.append({
+        "id": "radiation-demo-alert",
+        "severity": "critical",
+        "title": "SIMULATED Radiation Safety Scenario",
+        "summary": (
+            "Demonstration scenario only. "
+            "No live radiation telemetry is connected."
+        ),
+        "detectedAt": current_time(),
+        "explanation": {
+            "summary": radiation_record.get(
+                "Explanation",
+                "This is a simulated radiation safety scenario."
+            ),
+            "detail": (
+                "SIMULATION ONLY — this is not a measured radiation event. "
+                "No live radiation readings, exposure assessment, "
+                "or validated dose threshold are available."
+            ),
+            "contributing": [],
+            "recommendedAction": radiation_record.get(
+                "Next_Step",
+                "Follow the designated mission radiation emergency procedure."
+            )
+        },
+        "confidence": None,
+        "metricRefs": []
+    })
+
+    return anomalies
 
 def build_anomalies():
     flagged = interpreted_alerts[
