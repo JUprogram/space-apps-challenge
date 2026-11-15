@@ -218,8 +218,8 @@ def build_anomalies():
     }
 
     anomalies.sort(
-        key=lambda alert: severity_order.get(
-            alert.get("severity", "info"), 99
+    	key=lambda alert: severity_order.get(
+        	alert.get("severity", "info"), 99
         )
     )
 
@@ -299,22 +299,21 @@ def build_anomalies():
         })
 
     # Highest-priority alerts appear first.
-    severity_order = {
-    	"critical": 0,
-    	"high": 1,
-    	"medium": 2,
-    	"low": 3,
-    	"info": 4,
+        severity_order = {
+        "critical": 0,
+        "high": 1,
+        "medium": 2,
+        "low": 3,
+        "info": 4
     }
 
-   anomalies.sort(
-    	key=lambda alert: severity_order.get(
-        alert.get("severity", "info"), 99
+    anomalies.sort(
+        key=lambda alert: severity_order.get(
+            alert.get("severity", "info"), 99
+        )
     )
-)
 
-   return anomalies
-
+    return anomalies
 
 # --------------------------------------------------
 # Build simulated radiation information
